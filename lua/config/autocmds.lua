@@ -1,10 +1,10 @@
 -- Auto-format on save
-vim.cmd [[
+vim.cmd([[
   augroup FormatOnSave
     autocmd!
     autocmd BufWritePre * lua vim.lsp.buf.format({ async = false })
   augroup END
-]]
+]])
 
 -- Augroup for Highlight on yank
 vim.cmd([[
@@ -63,4 +63,3 @@ vim.cmd([[
   autocmd TermOpen * normal! G
   autocmd TermOpen * tnoremap <Esc> <C-\><C-n>
 ]])
-

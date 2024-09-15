@@ -6,6 +6,7 @@ local utils = require('config.utils')
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- vim.keymap.set('n', '<leader>pv', vim.cmd.Ex, { desc = "[P]roject [V]iew" })
 vim.keymap.set('n', '<C-c>', '<ESC><ESC>', { silent = true })
+vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>', { silent = true })
 
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
@@ -21,8 +22,8 @@ vim.keymap.set('n', '<', '<gv', { silent = true })
 vim.keymap.set('n', 'J', 'mzj`z')
 vim.keymap.set('n', '<c-d>', '<C-d>zz', { desc = 'Half Page Jumping Up' })
 vim.keymap.set('n', '<c-u>', '<C-u>zz', { desc = 'Half Page Jumping Down' })
-vim.keymap.set('n', 'n', 'nzzzv', { silent = true })
-vim.keymap.set('n', 'N', 'Nzzzv', { silent = true })
+vim.keymap.set('n', 'n', 'nzzzv', { noremap = true, silent = true })
+vim.keymap.set('n', 'N', 'Nzzzv', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', 'gp', '<Nop>', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz')
 vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz')
@@ -37,6 +38,10 @@ vim.keymap.set('n', '<leader>bs', '<cmd>split<CR>', { desc = 'Openn Buf Horizont
 vim.keymap.set('n', '<leader>bv', '<cmd>vsp<CR>', { desc = 'Open Buf Vertical Split' })
 vim.keymap.set('n', '<leader>bt', '<cmd>terminal<CR>')
 
+-- -- open terminal for R and Python
+-- vim.keymap.set('n', '<leader>bR', '<cmd>terminal R<CR>', { desc = 'Open R Terminal' })
+-- vim.keymap.set('n', '<leader>bP', '<cmd>terminal python<CR>', { desc = 'Open Python Terminal' })
+
 -- Editing Keymaps
 vim.keymap.set('x', '<leader>p', [["_dP"]], { desc = 'Paste without register' })
 vim.keymap.set({ 'n', 'v' }, '<leader>d', [["_d"]], { desc = 'Delete without register' })
@@ -45,16 +50,16 @@ vim.keymap.set('n', '<leader>Y', '"+Y')
 -- replace current word in current scope
 vim.keymap.set(
   'n',
-  '<leader>r',
+  '<leader>rw',
   ':%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>',
-  { desc = '[R]eplace Current Word in Current Scope' }
+  { desc = '[R]eplace Current [W]ord in Current Scope' }
 )
 -- replace current word in file scope
 vim.keymap.set(
   'n',
-  '<leader>R',
+  '<leader>rW',
   ':%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>',
-  { desc = '[R]eplace Current Word in File Scope' }
+  { desc = '[R]eplace Current [W]ord in File Scope' }
 )
 
 -- Open vertical split pane
@@ -87,7 +92,7 @@ vim.keymap.set({ 'n', 'v' }, '<leader>sw', function()
 end, { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>sp', function()
   require('telescope.builtin').grep_string({ search = vim.fn.input('Grep Search > ') })
-end, { desc = '[S]search [P]roject' })
+end, { desc = '[S]earch [P]roject' })
 vim.keymap.set('n', '<leader>sG', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
 vim.keymap.set('n', '<leader>sg', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
@@ -97,11 +102,21 @@ vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
--- vim.keymap.set('n', '<leader>vd', function()
+-- vim.keymap.set('n', '<leader>ef', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
+-- vim.keymap.set('n', '<leader>ee', function()
 --   vim.diagnostic.setloclist()
 --   vim.cmd('lopen')
 -- end, { desc = 'Open the diagnostics location list' })
+
+-- local runner = require("quarto.runner")
+-- vim.keymap.set('n', '<leader>qrc', runner.run_cell, { desc = '[R]un [C]ell', silent = true })
+-- vim.keymap.set('n', '<leader>qra', runner.run_above, { desc = '[R]un cell and [A]bove', silent = true })
+-- vim.keymap.set('n', "<leader>qrA", runner.run_all, { desc = "run all cells", silent = true })
+-- vim.keymap.set('n', "<leader>qrl", runner.run_line, { desc = "run line", silent = true })
+-- vim.keymap.set('v', '<leader>qr', runner.run_range, { desc = "run visual range", silent = true })
+-- vim.keymap.set('n', '<leader>qRA', function()
+--   runner.run_all(true)
+-- end, { desc = "run all cells of all languages", silent = true })
 
 -- Refactoring Keymaps
 -- vim.keymap.set({ "x" }, "<leader>re", [[<Esc><Cmd>lua require('refactoring').refactor('Extract Function')<CR>]],
@@ -119,4 +134,3 @@ vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open float
 --   { noremap = true, silent = true, expr = false, desc = "Extract Block" })
 -- vim.keymap.set({ "n" }, "<leader>rbf", [[<Esc><Cmd>lua require('refactoring').refactor('Extract Block To File')<CR>]],
 --   { noremap = true, silent = true, expr = false, desc = "Extract Block To File" })
-
