@@ -6,15 +6,27 @@ return {
     'https://github.com/apple/pkl-neovim.git',
   },
   build = ':TSUpdate',
+  event = { 'BufReadPre', 'BufNewFile' },
   config = function()
-    -- Lazy loading of treesitter
     local ts = require('nvim-treesitter.configs')
     ts.setup({
       ensure_installed = {
-        'bash', 'c', 'cpp', 'lua', 'python', 'go', 'markdown', 'markdown_inline', 'r', 'rust', 'vimdoc', 'vim', 'yaml',
-        'query'
+        'bash',
+        'c',
+        'cpp',
+        'lua',
+        'python',
+        'go',
+        'markdown',
+        'markdown_inline',
+        'r',
+        'rust',
+        'vimdoc',
+        'vim',
+        'yaml',
+        'query',
       },
-      ignore_install = { '' },
+      ignore_install = {}, -- Example: Ignore Haskell if not needed
       highlight = {
         enable = true,
         additional_vim_regex_highlighting = { 'markdown' },
@@ -72,7 +84,16 @@ return {
           },
         },
       },
+      refactor = {
+        highlight_definitions = { enable = true },
+        highlight_current_scope = { enable = true },
+        smart_rename = {
+          enable = true,
+          keymaps = {
+            smart_rename = 'grr',
+          },
+        },
+      },
     })
   end,
 }
-

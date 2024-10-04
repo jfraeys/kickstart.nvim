@@ -11,7 +11,11 @@ return {
       },
       sections = {
         lualine_a = {
-          { 'buffers', show_modified_status = true, symbols = { modified = '●', alternate_file = '#', directory = '' } },
+          {
+            'buffers',
+            show_modified_status = true,
+            symbols = { modified = '●', alternate_file = '#', directory = '' },
+          },
         },
         lualine_b = {
           { 'mode', icons_enabled = true },
@@ -30,4 +34,3 @@ return {
     })
   end,
 }
-

@@ -34,4 +34,3 @@ require('lazy').setup({
     exclude = 'custom.plugins.mason',
   },
 }, opts)
-
