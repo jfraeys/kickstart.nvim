@@ -1,5 +1,5 @@
 return {
-  -- Add the nvim-dap related plugins
+  -- add the nvim-dap related plugins
   {
     'mfussenegger/nvim-dap',
     dependencies = {
