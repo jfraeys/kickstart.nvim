@@ -8,7 +8,7 @@ return {
   config = function()
     -- Linter configurations based on file type
     require('lint').linters_by_ft = {
-      python = { 'ruff' },
+      python = { 'ruff', 'mypy' },
       go = { 'golangcilint' },
       yaml = { 'yamllint' },
       bash = { 'shellcheck' },
@@ -39,7 +39,7 @@ return {
       ensure_installed = {
         -- 'clippy', -- Rust
         'ruff', -- Python
-        -- 'mypy',       -- Uncomment if needed for additional Python linting
+        'mypy', -- Uncomment if needed for additional Python linting
         'golangci-lint', -- Go
         'yamllint', -- YAML
         'shellcheck', -- Bash

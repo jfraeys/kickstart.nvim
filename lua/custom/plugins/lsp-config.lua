@@ -41,27 +41,31 @@ return {
           },
         },
       },
-      ruff_lsp = { filetypes = { 'python' } },
       pyright = {
         filetypes = { 'python' },
         settings = {
+          pyright = {
+            disableOrganizeImports = false,
+          },
           python = {
             analysis = {
               autoSearchPaths = false,
               diagnosticMode = 'workspace',
               useLibraryCodeForTypes = true,
               typeCheckingMode = 'off',
+              ignore = { '*' },
             },
           },
         },
+      },
+      ruff = {
+        filetypes = { 'python' },
+        cmd = { 'ruff', 'server' },
       },
       rust_analyzer = {
         cmd = { 'rustup', 'run', 'stable', 'rust-analyzer' },
       },
       texlab = {
-        flags = {
-          debounce_text_changes = 150,
-        },
         settings = {
           texlab = {
             build = {
@@ -77,7 +81,6 @@ return {
         },
       },
       lua_ls = {
-        filetypes = { 'lua' },
         settings = {
           Lua = {
             runtime = { version = 'LuaJIT', path = vim.split(package.path, ';') },
@@ -95,10 +98,8 @@ return {
         root_dir = function(fname)
           return require('lspconfig.util').root_pattern('.marksman.toml', '.git')(fname) or vim.loop.cwd()
         end,
-        settings = {},
       },
       yamlls = {
-        filetypes = { 'yaml' },
         settings = {
           yaml = {
             schemas = {
@@ -114,45 +115,41 @@ return {
     -- Setup LSP servers via mason-lspconfig
     require('mason-lspconfig').setup({
       ensure_installed = vim.tbl_keys(servers),
-      handlers = {
-        function(server_name)
-          require('lspconfig')[server_name].setup({
-            capabilities = capabilities,
-          })
-        end,
-      },
     })
 
-    -- Setup specific LSP servers with custom configuration
+    -- Attach custom handlers to each server
+    local on_attach = function(client, bufnr)
+      local function nmap(keys, func, desc)
+        if desc then
+          desc = 'LSP: ' .. desc
+        end
+        vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
+      end
+
+      nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+      nmap('<leader>ca', function()
+        vim.lsp.buf.code_action(require('telescope.themes').get_dropdown({
+          winblend = 10,
+          previewer = false,
+        }))
+      end, '[C]ode [A]ction')
+
+      nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+      nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+      nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+      nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+      nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+      nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+
+      nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
+      nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+    end
+
+    -- Configure each server
     for server, config in pairs(servers) do
       require('lspconfig')[server].setup(vim.tbl_extend('force', {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-          local function nmap(keys, func, desc)
-            if desc then
-              desc = 'LSP: ' .. desc
-            end
-            vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
-          end
-
-          nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-          nmap('<leader>ca', function()
-            vim.lsp.buf.code_action(require('telescope.themes').get_dropdown({
-              winblend = 10,
-              previewer = false,
-            }))
-          end, '[C]ode [A]ction')
-
-          nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-          nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-          nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-          nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
-          nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-          nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
-
-          nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
-          nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
-        end,
+        on_attach = on_attach,
       }, config))
     end
 
@@ -176,7 +173,7 @@ return {
       vim.fn.sign_define(opts.name, {
         texthl = opts.name,
         text = opts.text,
-        numhl = '',
+        numhl = opts.name,
       })
     end
 
@@ -185,7 +182,7 @@ return {
     sign({ name = 'DiagnosticSignHint', text = '⚑' })
     sign({ name = 'DiagnosticSignInfo', text = '»' })
 
-    -- Neodev setup for improved Lua development
+    -- Additional setups
     require('fidget').setup({})
     require('neodev').setup({
       library = {

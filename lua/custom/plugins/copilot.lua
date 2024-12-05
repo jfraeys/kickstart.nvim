@@ -9,8 +9,8 @@ return {
         ['.'] = true,
       },
       keymap = {
-        accept_word = '<M-k>',
-        accept_line = '<M-j>',
+        accept_word = '<M-u>',
+        accept_line = '<M-i>',
         next = 'M-[',
         previous = 'M-]',
       },

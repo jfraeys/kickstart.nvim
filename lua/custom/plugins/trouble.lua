@@ -1,19 +1,37 @@
 return {
   'folke/trouble.nvim',
-  cmd = 'TroubleToggle', -- Use TroubleToggle to toggle the Trouble window
-  opts = {
-    auto_open = false, -- Automatically open Trouble when diagnostics exist
-    auto_close = true, -- Automatically close Trouble when diagnostics are cleared
-    auto_preview = true, -- Preview diagnostic location on hover
-    auto_fold = true, -- Automatically fold diagnostics items
-    use_diagnostic_signs = true, -- Use LSP diagnostic signs
-    icons = true, -- Enable icons for better UI visuals
-    padding = true, -- Add padding around the Trouble window
-  },
+  opts = {}, -- for default options, refer to the configuration section for custom setup.
+  cmd = 'Trouble',
   keys = {
-    { '<leader>tt', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Toggle Trouble' },
-    { '<leader>tb', '<cmd>Trouble diagnostics toggle focus.buf=0<cr>', desc = 'Toggle Buffer Diagnostics' },
-    { '<leader>tl', '<cmd>Trouble loclist<cr>', desc = 'Loclist' },
-    { '<leader>tq', '<cmd>Trouble quickfix<cr>', desc = 'Quickfix' },
+    {
+      '<leader>xx',
+      '<cmd>Trouble diagnostics toggle<cr>',
+      desc = 'Diagnostics (Trouble)',
+    },
+    {
+      '<leader>xX',
+      '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+      desc = 'Buffer Diagnostics (Trouble)',
+    },
+    {
+      '<leader>cs',
+      '<cmd>Trouble symbols toggle focus=false<cr>',
+      desc = 'Symbols (Trouble)',
+    },
+    {
+      '<leader>cl',
+      '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+      desc = 'LSP Definitions / references / ... (Trouble)',
+    },
+    {
+      '<leader>xL',
+      '<cmd>Trouble loclist toggle<cr>',
+      desc = 'Location List (Trouble)',
+    },
+    {
+      '<leader>xQ',
+      '<cmd>Trouble qflist toggle<cr>',
+      desc = 'Quickfix List (Trouble)',
+    },
   },
 }
