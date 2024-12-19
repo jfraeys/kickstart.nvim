@@ -37,10 +37,11 @@ return {
       notify_on_error = false,
       format_on_save = function(bufnr)
         local disable_filetypes = { c = true, cpp = true }
-        return {
-          timeout_ms = 500,
-          lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-        }
+        return not disable_filetypes[vim.bo[bufnr].filetype]
+          and {
+            timeout_ms = 500,
+            lsp_fallback = true,
+          }
       end,
       formatters_by_ft = formatters_by_ft,
     }
@@ -48,17 +49,25 @@ return {
   config = function(_, opts)
     require('conform').setup(opts)
 
+    -- Automatically gather and deduplicate tools
+    local formatters = opts.formatters_by_ft
+    local tools = {}
+    for _, formatter in pairs(formatters) do
+      if type(formatter) == 'table' then
+        vim.list_extend(tools, formatter)
+      end
+    end
+
+    -- Deduplicate tools
+    local unique_tools = {}
+    for _, tool in ipairs(tools) do
+      unique_tools[tool] = true
+    end
+    tools = vim.tbl_keys(unique_tools)
+
+    -- Install required tools
     require('mason-tool-installer').setup({
-      ensure_installed = {
-        'stylua',
-        'ruff',
-        'isort',
-        'black',
-        'gofumpt',
-        'goimports',
-        'shfmt',
-        'hadolint',
-      },
+      ensure_installed = tools,
     })
   end,
 }

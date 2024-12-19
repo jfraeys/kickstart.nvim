@@ -56,10 +56,14 @@ vim.api.nvim_create_autocmd('User', {
   end,
 })
 
--- Automatically start insert mode in terminal buffers
-vim.cmd([[
-  autocmd TermOpen * startinsert
-  autocmd TermOpen * setlocal nonumber norelativenumber
-  autocmd TermOpen * normal! G
-  autocmd TermOpen * tnoremap <Esc> <C-\><C-n>
-]])
+vim.api.nvim_create_autocmd('TermOpen', {
+  pattern = '*',
+  group = vim.api.nvim_create_augroup('custom-term-open', { clear = true }),
+  desc = 'Automatically start insert mode in terminal buffers',
+  callback = function()
+    vim.cmd('startinsert')
+    vim.cmd('setlocal nonumber norelativenumber')
+    vim.cmd('normal! G')
+    vim.cmd('tnoremap <esc><esc> <c-\\><c-n>')
+  end,
+})
