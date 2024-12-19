@@ -13,21 +13,129 @@ return {
       event = 'LspAttach', -- Lazy load on LSP attachment
     },
 
-    -- Additional Lua configuration
-    'folke/neodev.nvim',
+    {
+      'ray-x/lsp_signature.nvim',
+      event = 'LspAttach',
+    },
+
+    -- Treesitter for better UI and syntax
+    {
+      'nvim-treesitter/nvim-treesitter',
+      build = ':TSUpdate',
+      event = 'BufReadPost',
+      opts = {
+        highlight = { enable = true },
+        indent = { enable = true },
+        ensure_installed = 'all', -- Alternatively, specify a list of languages
+      },
+    },
+
+    -- venv-selector for Python virtual environments
+    {
+      'williamboman/venv-selector.nvim',
+      event = 'BufReadPost',
+    },
+
+    {
+      'nvim-treesitter/nvim-treesitter-textobjects',
+      event = 'BufReadPost',
+    },
+
+    -- UI enhancements
+    'nvim-lua/plenary.nvim',
+    'nvim-telescope/telescope.nvim',
   },
   config = function()
-    -- General capabilities for LSP servers
+    -- Enhanced capabilities for LSP servers
     local capabilities = vim.lsp.protocol.make_client_capabilities()
     local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
     if has_cmp then
-      capabilities = cmp_nvim_lsp.default_capabilities()
+      capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
     end
 
-    -- LSP server configurations
+    -- Default on_attach function
+    local on_attach = function(client, bufnr)
+      vim.bo[bufnr].omnifunc = 'v:lua.vim.lsp.omnifunc'
+      require('lsp_signature').on_attach({ hint_enable = false, handler_opts = { border = 'rounded' } }, bufnr)
+
+      local function nmap(keys, func, desc)
+        if desc then
+          desc = 'LSP: ' .. desc
+        end
+        vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
+      end
+
+      -- Key mappings
+      nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+      nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+      nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+      nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+      nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+      nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+      nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+
+      -- Diagnostics
+      nmap('<leader>e', vim.diagnostic.open_float, 'Show line [E]rrors')
+      nmap('[d', vim.diagnostic.goto_prev, 'Previous Diagnostic')
+      nmap(']d', vim.diagnostic.goto_next, 'Next Diagnostic')
+
+      -- Code Actions and Refactoring
+      nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+      nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+
+      -- Documentation
+      nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
+      nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+
+      -- Highlight symbol under cursor
+      if client.server_capabilities.documentHighlightProvider then
+        local highlight_group = vim.api.nvim_create_augroup('lsp_document_highlight', { clear = false })
+
+        -- Create a subtle highlight style (modify to your preference)
+        vim.api.nvim_set_hl(0, 'LspDocumentHighlight', {
+          background = '#3e3e3e', -- darker background for subtle effect
+          foreground = '#a0a0a0', -- lighter color for text, to reduce intensity
+          underline = false,
+        })
+
+        -- Apply subtle highlighting on cursor hold
+        -- vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+        --   buffer = bufnr,
+        --   group = highlight_group,
+        --   callback = vim.lsp.buf.document_highlight,
+        -- })
+
+        -- Clear references less aggressively
+        vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+          buffer = bufnr,
+          group = highlight_group,
+          callback = vim.lsp.buf.clear_references,
+        })
+      end
+    end
+
+    -- Default LSP configuration
+    local default_config = {
+      capabilities = capabilities,
+      on_attach = on_attach,
+    }
+
+    require('venv-selector').setup({
+      auto_activate = true,
+    })
+
+    -- Server-specific configurations
     local servers = {
       bashls = { filetypes = { 'sh', 'bash' } },
-      clangd = {},
+      clangd = {
+        cmd = {
+          'clangd',
+          '--background-index',
+          '--suggest-missing-includes',
+          '--clang-tidy',
+          '--header-insertion=iwyu',
+        },
+      },
       gopls = {
         settings = {
           gopls = {
@@ -35,28 +143,27 @@ return {
             staticcheck = true,
             completeUnimported = true,
             usePlaceholders = true,
-            analyses = {
-              unusedparams = true,
-            },
+            analyses = { unusedparams = true, fieldalignment = true },
           },
         },
       },
       pyright = {
-        filetypes = { 'python' },
         settings = {
-          pyright = {
-            disableOrganizeImports = false,
-          },
           python = {
             analysis = {
-              autoSearchPaths = false,
+              autoSearchPaths = true,
               diagnosticMode = 'workspace',
               useLibraryCodeForTypes = true,
-              typeCheckingMode = 'off',
-              ignore = { '*' },
+              typeCheckingMode = 'basic',
             },
           },
         },
+        root_dir = require('lspconfig/util').root_pattern(
+          'pyproject.toml',
+          'setup.py',
+          'setup.cfg',
+          'requirements.txt'
+        ),
       },
       ruff = {
         filetypes = { 'python' },
@@ -64,19 +171,11 @@ return {
       },
       rust_analyzer = {
         cmd = { 'rustup', 'run', 'stable', 'rust-analyzer' },
-      },
-      texlab = {
         settings = {
-          texlab = {
-            build = {
-              executable = 'latexmk',
-              args = { '-pdf', '-xelatex', '-output-directory=output', '-interaction=nonstopmode', '-synctex=1', '%f' },
-              onSave = true,
-            },
-            forwardSearch = {
-              executable = 'zathura',
-              args = { '--synctex-forward', '%l:1:%f', '%p' },
-            },
+          ['rust-analyzer'] = {
+            imports = { granularity = { group = 'module' }, prefix = 'self' },
+            cargo = { buildScripts = { enable = true } },
+            procMacro = { enable = true },
           },
         },
       },
@@ -85,72 +184,18 @@ return {
           Lua = {
             runtime = { version = 'LuaJIT', path = vim.split(package.path, ';') },
             diagnostics = { globals = { 'vim' } },
-            workspace = {
-              library = vim.api.nvim_get_runtime_file('', true),
-              checkThirdParty = false,
-            },
-            telemetry = { enable = false },
+            workspace = { library = vim.api.nvim_get_runtime_file('', true) },
           },
         },
       },
-      marksman = {
-        filetypes = { 'markdown' },
-        root_dir = function(fname)
-          return require('lspconfig.util').root_pattern('.marksman.toml', '.git')(fname) or vim.loop.cwd()
-        end,
-      },
-      yamlls = {
-        settings = {
-          yaml = {
-            schemas = {
-              ['https://json.schemastore.org/github-workflow.json'] = '/.github/workflows/*.{yml,yaml}',
-            },
-          },
-        },
-      },
-      taplo = { filetypes = { 'toml' } },
-      dockerls = { filetypes = { 'Dockerfile' } },
     }
 
-    -- Setup LSP servers via mason-lspconfig
-    require('mason-lspconfig').setup({
-      ensure_installed = vim.tbl_keys(servers),
-    })
+    -- Setup LSP servers using tbl_deep_extend
+    require('mason-lspconfig').setup({ ensure_installed = vim.tbl_keys(servers) })
+    local lspconfig = require('lspconfig')
 
-    -- Attach custom handlers to each server
-    local on_attach = function(client, bufnr)
-      local function nmap(keys, func, desc)
-        if desc then
-          desc = 'LSP: ' .. desc
-        end
-        vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
-      end
-
-      nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-      nmap('<leader>ca', function()
-        vim.lsp.buf.code_action(require('telescope.themes').get_dropdown({
-          winblend = 10,
-          previewer = false,
-        }))
-      end, '[C]ode [A]ction')
-
-      nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-      nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-      nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-      nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
-      nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-      nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
-
-      nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
-      nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
-    end
-
-    -- Configure each server
     for server, config in pairs(servers) do
-      require('lspconfig')[server].setup(vim.tbl_extend('force', {
-        capabilities = capabilities,
-        on_attach = on_attach,
-      }, config))
+      lspconfig[server].setup(vim.tbl_deep_extend('force', default_config, config))
     end
 
     -- Diagnostics configuration
@@ -158,38 +203,22 @@ return {
       underline = true,
       severity_sort = true,
       signs = true,
-      update_in_insert = false,
-      virtual_text = {
-        spacing = 2,
-      },
-      float = {
-        source = 'if_many',
-        border = 'rounded',
-      },
+      virtual_text = { spacing = 2, prefix = '●' },
+      float = { source = 'if_many', border = 'rounded' },
     })
 
     -- Define diagnostic signs
-    local sign = function(opts)
-      vim.fn.sign_define(opts.name, {
-        texthl = opts.name,
-        text = opts.text,
-        numhl = opts.name,
-      })
+    local signs = {
+      { name = 'DiagnosticSignError', text = '✘' },
+      { name = 'DiagnosticSignWarn', text = '▲' },
+      { name = 'DiagnosticSignHint', text = '⚑' },
+      { name = 'DiagnosticSignInfo', text = '»' },
+    }
+    for _, sign in ipairs(signs) do
+      vim.fn.sign_define(sign.name, { text = sign.text, texthl = sign.name })
     end
 
-    sign({ name = 'DiagnosticSignError', text = '✘' })
-    sign({ name = 'DiagnosticSignWarn', text = '▲' })
-    sign({ name = 'DiagnosticSignHint', text = '⚑' })
-    sign({ name = 'DiagnosticSignInfo', text = '»' })
-
-    -- Additional setups
+    -- Additional plugin setups
     require('fidget').setup({})
-    require('neodev').setup({
-      library = {
-        plugins = { 'nvim-dap-ui' },
-        types = true,
-      },
-    })
   end,
 }
-

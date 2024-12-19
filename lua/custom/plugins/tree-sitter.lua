@@ -10,6 +10,11 @@ return {
   config = function()
     local ts = require('nvim-treesitter.configs')
     ts.setup({
+      sync_install = {
+        enable = true,
+        prompt = 'Syncing plugins...',
+      },
+      auto_install = false,
       ensure_installed = {
         'bash',
         'c',

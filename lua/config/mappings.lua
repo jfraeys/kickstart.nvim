@@ -36,7 +36,12 @@ vim.keymap.set('n', '<leader>bp', '<cmd>bprev<CR>zz', { desc = 'Quick Nav Buf Pr
 vim.keymap.set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = 'Quick Nav Buf Delete' })
 vim.keymap.set('n', '<leader>bs', '<cmd>split<CR>', { desc = 'Openn Buf Horizontal Split' })
 vim.keymap.set('n', '<leader>bv', '<cmd>vsp<CR>', { desc = 'Open Buf Vertical Split' })
-vim.keymap.set('n', '<leader>bt', '<cmd>terminal<CR>')
+vim.keymap.set('n', '<leader>bt', function()
+  vim.cmd.vnew()
+  vim.cmd.term()
+  vim.cmd.wincmd('J')
+  vim.api.nvim_win_set_height(0, 15)
+end, { desc = 'Open Buf in Terminal' })
 
 -- -- open terminal for R and Python
 -- vim.keymap.set('n', '<leader>bR', '<cmd>terminal R<CR>', { desc = 'Open R Terminal' })
@@ -97,6 +102,20 @@ vim.keymap.set('n', '<leader>sG', require('telescope.builtin').live_grep, { desc
 vim.keymap.set('n', '<leader>sg', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
 vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]esume' })
+
+-- Telescope config files
+vim.keymap.set('n', '<leader>fc', function()
+  require('telescope.builtin').find_files({
+    cwd = vim.fn.stdpath('config'),
+    find_command = { 'fd', '--type', 'f', '--exclude', 'README.md', '--exclude', 'LICENSE.md', '--exclude', 'init.lua' },
+  })
+end, { desc = '[F]ind [C]onfig Files' })
+
+vim.keymap.set('n', '<leader>fp', function()
+  require('telescope.builtin').find_files({
+    cwd = vim.fs.joinpath(vim.fn.stdpath('data'), 'lazy'),
+  })
+end, { desc = '[F]ind [P]lugin Files' })
 
 -- Tree-sitter Keymaps
 -- Diagnostic keymaps
