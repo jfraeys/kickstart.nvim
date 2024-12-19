@@ -1,12 +1,22 @@
+---
 # Check Lua Formatting
-name: Check Lua Formatting
-on: pull_request_target
+name: Check Lua Formatting in MyRepo
+
+on:
+  pull_request_target:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
   stylua-check:
-    if: github.repository == 'nvim-lua/kickstart.nvim'
     name: Stylua Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
