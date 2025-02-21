@@ -23,6 +23,7 @@ return {
     },
     'nvim-tree/nvim-web-devicons', -- Optional: Icons for UI
     'mbbill/undotree', -- Undotree dependency
+    -- 'b0o/schemastore.nvim', -- YAML schema support
   },
   config = function()
     local telescope = require('telescope')
@@ -49,6 +50,9 @@ return {
 
     -- Load the undo extension for Telescope
     telescope.load_extension('undo')
+
+    -- Load yaml schemas for Telescope
+    -- telescope.load_extension('yaml_schema')
 
     -- Key mapping to open undotree directly
     vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle UndoTree' })

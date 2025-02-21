@@ -38,7 +38,9 @@ return {
         local client_id = args.data.client_id
         local client = vim.lsp.get_client_by_id(client_id)
         local bufnr = args.buf
-
+        if not client then
+          return
+        end
         -- Only attach to clients that support document formatting
         if not client.server_capabilities.documentFormattingProvider then
           return
@@ -60,12 +62,12 @@ return {
               return
             end
 
-            vim.lsp.buf.format {
+            vim.lsp.buf.format({
               async = false,
               filter = function(c)
                 return c.id == client.id
               end,
-            }
+            })
           end,
         })
       end,

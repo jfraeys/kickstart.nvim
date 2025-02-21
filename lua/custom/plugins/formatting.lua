@@ -29,8 +29,9 @@ return {
       go = { 'gofumpt', 'goimports' },
       yaml = { 'prettier' },
       bash = { 'shfmt' },
-      rust = { 'rustfmt' },
+      rust = {},
       dockerfile = { 'hadolint' },
+      c = { 'clang-format' },
     }
 
     return {

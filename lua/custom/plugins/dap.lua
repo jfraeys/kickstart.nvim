@@ -1,27 +1,35 @@
 return {
-  -- add the nvim-dap related plugins
+  -- Add the nvim-dap related plugins
   {
     'mfussenegger/nvim-dap',
     dependencies = {
-      { 'rcarriga/nvim-dap-ui', cmd = { 'Dapui' } },
-      { 'nvim-neotest/nvim-nio', cmd = { 'Neotest' } },
+      { 'rcarriga/nvim-dap-ui', cmd = { 'DapUI' } },
+      { 'nvim-neotest/nvim-nio' },
       { 'thehamsta/nvim-dap-virtual-text', ft = { 'python', 'go', 'rust' } },
       { 'mfussenegger/nvim-dap-python', ft = 'python' },
       { 'leoluz/nvim-dap-go', ft = 'go' },
       { 'simrat39/rust-tools.nvim', ft = 'rust' },
       'williamboman/mason.nvim', -- Mason for managing external tools
       'williamboman/mason-lspconfig.nvim',
+      'jay-babu/mason-nvim-dap.nvim', -- Ensures dap installations via Mason
     },
     config = function()
       local dap = require('dap')
       local dapui = require('dapui')
       local dap_virtual_text = require('nvim-dap-virtual-text')
+      local mason_dap = require('mason-nvim-dap')
 
-      -- Initialize dap-ui and dap-virtual-text
+      -- Setup dap-ui and dap-virtual-text
       dapui.setup()
       dap_virtual_text.setup()
 
-      -- Auto open/close dap-ui on events
+      -- Ensure Mason installs required debuggers
+      mason_dap.setup({
+        ensure_installed = { 'codelldb', 'python', 'delve' }, -- C/C++, Python, Go
+        automatic_setup = true,
+      })
+
+      -- Auto open/close dap-ui on debugging events
       dap.listeners.after.event_initialized['dapui_config'] = function()
         dapui.open()
       end
