@@ -1,28 +1,43 @@
--- Define the output directory path
-local output_dir = vim.fn.expand('%:p:h') .. '/output/'
+local output_dir = 'output' -- Relative to the current file's directory
 
--- Helper function to manage Zathura instances
+-- Get the PDF path based on the current file
+local function get_pdf_path()
+  local file_dir = vim.fn.expand('%:p:h')
+  local file_name = vim.fn.expand('%:t:r')
+  return file_dir .. '/' .. output_dir .. '/' .. file_name .. '.pdf'
+end
+
+-- Manage the Zathura viewer
 local function manage_zathura(pdf_path)
-  -- Check if Zathura is already running for the given PDF
+  if not pdf_path or pdf_path == '' then
+    print('Invalid PDF path.')
+    return
+  end
+
   local zathura_running = vim.fn.systemlist('pgrep -f "zathura ' .. pdf_path .. '"')
 
   if #zathura_running == 0 then
-    -- Start Zathura if it's not running
-    vim.fn.jobstart({ 'zathura', pdf_path }, { detach = true, stdout = '/dev/null', stderr = '/dev/null' })
-    return true
+    local ok, err = pcall(function()
+      return vim.fn.jobstart({ 'zathura', pdf_path }, { detach = true })
+    end)
+
+    if not ok then
+      print('Failed to start Zathura:', err)
+    end
   else
-    -- Inform the user that Zathura is already running
     print('Zathura is already running for this file.')
-    return false
   end
 end
 
-local function get_pdf_path()
-  return output_dir .. vim.fn.expand('%:t:r') .. '.pdf'
-end
-
+-- Open Zathura
 local function open_zathura()
   local pdf_path = get_pdf_path()
+  if pdf_path == '' then
+    print('Error: Could not determine PDF path.')
+    return
+  end
+
+  print('Opening Zathura for ' .. pdf_path)
   if vim.fn.filereadable(pdf_path) == 1 then
     manage_zathura(pdf_path)
   else
@@ -30,62 +45,39 @@ local function open_zathura()
   end
 end
 
--- Function to close the Zathura instance for the current PDF
+-- Close Zathura
 local function close_zathura()
   local pdf_path = get_pdf_path()
+  if pdf_path == '' then
+    print('Error: Could not determine PDF path.')
+    return
+  end
+
   vim.fn.system({ 'pkill', '-f', 'zathura ' .. pdf_path })
 end
 
--- Keybinding to compile LaTeX to PDF using xelatex with latexmk and output to the "output" directory
-vim.keymap.set(
-  'n',
-  '<leader>ll',
-  ':!mkdir -p ' .. output_dir .. ' && latexmk -f -pdf -xelatex -output-directory=' .. output_dir .. ' -synctex=1 %<CR>',
-  {
-    desc = 'Compile LaTeX to PDF using xelatex with SyncTeX in the output directory',
-    noremap = true,
-    silent = true,
-  }
-)
-
--- Keybinding to view the compiled PDF in Zathura from the output directory
-vim.keymap.set('n', '<leader>lv', function()
-  open_zathura()
-end, {
-  desc = 'View PDF in Zathura from the output directory',
+-- Key mappings
+vim.keymap.set('n', '<leader>ll', '<cmd>VimtexCompile<CR>', {
+  desc = 'Compile LaTeX using VimTeX',
   noremap = true,
   silent = true,
 })
 
--- Keybinding to close Zathura for the current PDF
+vim.keymap.set('n', '<leader>lv', open_zathura, {
+  desc = 'View PDF in Zathura',
+  noremap = true,
+  silent = true,
+})
+
 vim.keymap.set('n', '<leader>lc', close_zathura, {
-  desc = 'Close Zathura instance for the current PDF',
+  desc = 'Close Zathura',
   noremap = true,
   silent = true,
 })
 
--- Cooldown period for launching Zathura
-local last_open_time = 0
-local cooldown_period = 5 -- Cooldown period in seconds
-
--- Autocmd to automatically open the PDF in Zathura when a .tex file is opened
-vim.api.nvim_create_autocmd('BufEnter', {
-  pattern = '*.tex',
-  callback = function()
-    local current_time = vim.fn.reltimefloat(vim.fn.reltime())
-    if current_time - last_open_time < cooldown_period then
-      print('Cooldown active, skipping Zathura launch.')
-      return
-    end
-
-    last_open_time = current_time
-
-    open_zathura()
-  end,
-})
-
--- Autocmd to close all Zathura instances related to the current file when exiting Neovim
-vim.api.nvim_create_autocmd('VimLeavePre', {
+-- Auto-close Zathura when the buffer is closed
+vim.api.nvim_create_autocmd('BufDelete', {
+  pattern = '*.tex', -- Trigger for TeX files
   callback = function()
     close_zathura()
   end,

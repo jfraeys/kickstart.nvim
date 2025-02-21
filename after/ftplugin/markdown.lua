@@ -76,6 +76,25 @@ vim.keymap.set('n', '<leader>lc', close_zathura, {
   silent = true,
 })
 
+vim.keymap.set('n', '<leader>ll', function()
+  local filename = vim.fn.expand('%:p')
+  local _, _, output_path = generate_pdf_paths(filename)
+
+  -- Build the PDF
+  local result = build_pdf(filename, output_path)
+
+  if #result == 0 then
+    print('Error: Could not generate PDF.')
+    return
+  end
+
+  print('PDF generated at: ' .. output_path)
+end, {
+  desc = 'Build PDF',
+  noremap = true,
+  silent = true,
+})
+
 -- Auto-run `buildnote` for files matching `*note-*.md` on save
 vim.api.nvim_create_autocmd('BufWritePost', {
   pattern = '*note-*.md',
