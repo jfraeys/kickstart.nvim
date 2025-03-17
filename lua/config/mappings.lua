@@ -36,12 +36,12 @@ vim.keymap.set('n', '<leader>bp', '<cmd>bprev<CR>zz', { desc = 'Quick Nav Buf Pr
 vim.keymap.set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = 'Quick Nav Buf Delete' })
 vim.keymap.set('n', '<leader>bs', '<cmd>split<CR>', { desc = 'Openn Buf Horizontal Split' })
 vim.keymap.set('n', '<leader>bv', '<cmd>vsp<CR>', { desc = 'Open Buf Vertical Split' })
-vim.keymap.set('n', '<leader>bt', function()
-  vim.cmd.vnew()
-  vim.cmd.term()
-  vim.cmd.wincmd('J')
-  vim.api.nvim_win_set_height(0, 15)
-end, { desc = 'Open Buf in Terminal' })
+-- vim.keymap.set('n', '<leader>bt', function()
+--   vim.cmd.vnew()
+--   vim.cmd.term()
+--   vim.cmd.wincmd('J')
+--   vim.api.nvim_win_set_height(0, 15)
+-- end, { desc = 'Open Buf in Terminal' })
 
 -- -- open terminal for R and Python
 -- vim.keymap.set('n', '<leader>bR', '<cmd>terminal R<CR>', { desc = 'Open R Terminal' })

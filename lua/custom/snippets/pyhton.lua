@@ -13,3 +13,9 @@ ls.add_snippets('python', {
     t({ ')' }),
   }),
 })
+
+ls.add_snippets('python', {
+  s('#!', {
+    t({ '#!/usr/bin/env python' }),
+  }),
+})

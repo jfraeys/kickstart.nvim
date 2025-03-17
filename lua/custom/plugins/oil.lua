@@ -4,7 +4,8 @@ return {
     'nvim-tree/nvim-web-devicons', -- Lazy dependency for devicons
   },
   config = function()
-    require('oil').setup({
+    local oil = require('oil')
+    oil.setup({
       columns = {
         'icon',
         -- 'permissions',
@@ -13,6 +14,12 @@ return {
         ['C-h'] = false,
         ['M-h'] = 'actions.select_split',
       },
+      -- Float window configuration
+      float = {
+        padding = 2,
+        border = 'rounded',
+      },
+      -- Show hidden files
       view_options = {
         show_hidden = true,
       },
@@ -26,9 +33,9 @@ return {
     vim.api.nvim_set_hl(0, 'OilSymlink', { fg = '#F92672' }) -- Symlink color (pink)
 
     -- Keymaps
-    vim.keymap.set('n', '-', '<CMD>Oil<CR>', { noremap = true, silent = true, desc = 'Open parent directory' })
-    vim.keymap.set('n', '<leader>-', function()
-      require('oil').toggle_float()
+    vim.keymap.set('n', '<leader>e', '<CMD>Oil<CR>', { noremap = true, silent = true, desc = 'Open parent directory' })
+    vim.keymap.set('n', '<leader>E', function()
+      oil.toggle_float()
     end, { noremap = true, silent = true, desc = 'Toggle oil floating window' })
   end,
 }

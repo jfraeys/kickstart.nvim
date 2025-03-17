@@ -5,7 +5,6 @@ return {
     'williamboman/mason-lspconfig.nvim',
     'WhoIsSethDaniel/mason-tool-installer.nvim',
     { 'folke/neodev.nvim', config = true }, -- Lua development enhancements
-
     -- Useful status updates for LSP
     {
       'j-hui/fidget.nvim',
@@ -95,7 +94,7 @@ return {
       nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
       -- Diagnostics
-      nmap('<leader>e', vim.diagnostic.open_float, 'Show line [E]rrors')
+      nmap('<leader>d', vim.diagnostic.open_float, 'Show line [E]rrors')
       nmap('[d', vim.diagnostic.goto_prev, 'Previous Diagnostic')
       nmap(']d', vim.diagnostic.goto_next, 'Next Diagnostic')
 
@@ -107,40 +106,57 @@ return {
       nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
       nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
-      -- Highlight symbol under cursor with improved appearance
+      -- Highlight symbol under cursor with improved performance
       if client.server_capabilities.documentHighlightProvider then
-        local highlight_group = vim.api.nvim_create_augroup('lsp_document_highlight', { clear = false })
+        local highlight_group = vim.api.nvim_create_augroup('lsp_document_highlight', { clear = true })
 
-        -- Get the background color from the 'Visual' highlight group
-        local visual_bg = vim.fn.synIDattr(vim.fn.hlID('Visual'), 'bg')
+        -- Get the background color from the 'Visual' highlight group (default fallback if unavailable)
+        local visual_bg = vim.fn.synIDattr(vim.fn.hlID('Visual'), 'bg') or '#3e4452'
 
-        -- Set LSP reference highlight groups
-        vim.api.nvim_set_hl(0, 'LspReferenceText', {
-          bg = visual_bg,
-        })
-        vim.api.nvim_set_hl(0, 'LspReferenceRead', {
-          bg = visual_bg,
-        })
-        vim.api.nvim_set_hl(0, 'LspReferenceWrite', {
-          bg = visual_bg,
-        })
+        -- Set LSP reference highlight groups (avoid setting them multiple times)
+        vim.api.nvim_set_hl(0, 'LspReferenceText', { bg = visual_bg })
+        vim.api.nvim_set_hl(0, 'LspReferenceRead', { bg = visual_bg })
+        vim.api.nvim_set_hl(0, 'LspReferenceWrite', { bg = visual_bg })
 
-        -- Add autocommands for better document highlighting
-        vim.api.nvim_create_autocmd({ 'CursorHold' }, {
-          group = highlight_group,
-          buffer = bufnr,
-          callback = function()
-            vim.lsp.buf.document_highlight()
-          end,
-        })
+        -- Ensure `updatetime` is not too low to prevent excessive highlighting
+        vim.o.updatetime = math.max(vim.o.updatetime, 500)
 
-        vim.api.nvim_create_autocmd({ 'CursorMoved', 'ModeChanged' }, {
-          group = highlight_group,
-          buffer = bufnr,
-          callback = function()
+        -- Function to enable or disable highlights
+        local function toggle_lsp_highlight(enable)
+          if enable then
+            vim.api.nvim_create_autocmd('CursorHold', {
+              group = highlight_group,
+              buffer = bufnr,
+              callback = function()
+                -- Ensure LSP is attached by checking capabilities (no need for server_ready)
+                if client and client.server_capabilities.documentHighlightProvider then
+                  vim.lsp.buf.document_highlight()
+                end
+              end,
+            })
+            vim.api.nvim_create_autocmd('CursorMoved', {
+              group = highlight_group,
+              buffer = bufnr,
+              callback = function()
+                vim.lsp.buf.clear_references()
+              end,
+            })
+          else
+            vim.api.nvim_clear_autocmds({ group = highlight_group, buffer = bufnr })
             vim.lsp.buf.clear_references()
-          end,
-        })
+          end
+        end
+
+        -- Optional: Command to toggle highlighting manually
+        vim.api.nvim_buf_create_user_command(bufnr, 'LspToggleHighlight', function()
+          local enabled = vim.b.lsp_highlight_enabled or false
+          toggle_lsp_highlight(not enabled)
+          vim.b.lsp_highlight_enabled = not enabled
+          print('LSP document highlights ' .. (enabled and 'disabled' or 'enabled'))
+        end, {})
+
+        -- Enable by default
+        toggle_lsp_highlight(true)
       end
     end
 
@@ -236,6 +252,7 @@ return {
           Lua = {
             workspace = { checkThirdParty = false },
             telemetry = { enable = false },
+            diagnostics = { globals = { 'vim' } },
           },
         },
       },
@@ -263,6 +280,33 @@ return {
       signs = true,
       virtual_text = { spacing = 2, prefix = '●' },
       float = { source = 'if_many', border = 'rounded' },
+    })
+
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'InsertLeave', 'BufWritePre' }, {
+      pattern = { 'Makefile', '*.mk' }, -- Apply only to Makefiles
+      callback = function()
+        local bufnr = vim.api.nvim_get_current_buf()
+        if vim.bo[bufnr].filetype ~= 'make' then
+          return
+        end
+
+        local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local diagnostics = {}
+
+        for i, line in ipairs(lines) do
+          if line:match('^[ ]+') then -- Detect only spaces at the start of a line
+            table.insert(diagnostics, {
+              lnum = i - 1,
+              col = 0,
+              severity = vim.diagnostic.severity.ERROR, -- Strong error visibility
+              source = 'MakefileWhitespaceCheck',
+              message = 'Makefiles must use tabs, not spaces for indentation',
+            })
+          end
+        end
+
+        vim.diagnostic.set(vim.api.nvim_create_namespace('make_whitespace'), bufnr, diagnostics, {})
+      end,
     })
 
     -- Define diagnostic signs
