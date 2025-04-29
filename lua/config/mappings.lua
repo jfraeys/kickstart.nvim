@@ -24,6 +24,11 @@ vim.keymap.set('n', '<c-d>', '<C-d>zz', { desc = 'Half Page Jumping Up' })
 vim.keymap.set('n', '<c-u>', '<C-u>zz', { desc = 'Half Page Jumping Down' })
 vim.keymap.set('n', 'n', 'nzzzv', { noremap = true, silent = true })
 vim.keymap.set('n', 'N', 'Nzzzv', { noremap = true, silent = true })
+
+vim.keymap.set('n', '<leader>n', function()
+  vim.o.hlsearch = not vim.o.hlsearch
+end, { desc = 'Toggle Search Highlight' })
+
 vim.api.nvim_set_keymap('n', 'gp', '<Nop>', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz')
 vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz')
@@ -116,16 +121,6 @@ vim.keymap.set('n', '<leader>fp', function()
     cwd = vim.fs.joinpath(vim.fn.stdpath('data'), 'lazy'),
   })
 end, { desc = '[F]ind [P]lugin Files' })
-
--- Tree-sitter Keymaps
--- Diagnostic keymaps
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
--- vim.keymap.set('n', '<leader>ef', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
--- vim.keymap.set('n', '<leader>ee', function()
---   vim.diagnostic.setloclist()
---   vim.cmd('lopen')
--- end, { desc = 'Open the diagnostics location list' })
 
 -- local runner = require("quarto.runner")
 -- vim.keymap.set('n', '<leader>qrc', runner.run_cell, { desc = '[R]un [C]ell', silent = true })
