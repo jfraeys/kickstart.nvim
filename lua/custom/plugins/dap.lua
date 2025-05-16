@@ -20,7 +20,7 @@ return {
 
       -- Setup dap-ui and dap-virtual-text
       dapui.setup()
-      dap_virtual_text.setup()
+      dap_virtual_text.setup({})
 
       -- Ensure Mason installs required debuggers
       mason_dap.setup({

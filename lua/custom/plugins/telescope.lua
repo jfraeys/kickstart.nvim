@@ -40,6 +40,20 @@ return {
             ['<C-d>'] = false, -- Disable Ctrl+d clearing input
           },
         },
+        -- Attach the global mapping for centering the cursor on selection
+        attach_mappings = function(prompt_bufnr, _)
+          local actions = require('telescope.actions')
+
+          -- When selecting a result, center it in the middle of the screen
+          actions.select_default:replace(function()
+            local line = actions.state.get_selected_entry().lnum
+            vim.api.nvim_win_set_cursor(0, { line, 0 })
+            vim.cmd('normal! zz') -- This centers the line in the middle of the screen
+            actions.close(prompt_bufnr) -- Close the Telescope window
+          end)
+
+          return true
+        end,
       },
       extensions = {
         undo = {

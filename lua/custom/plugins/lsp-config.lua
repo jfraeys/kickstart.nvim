@@ -95,8 +95,8 @@ return {
 
       -- Diagnostics
       nmap('<leader>d', vim.diagnostic.open_float, 'Show line [E]rrors')
-      nmap('[d', vim.diagnostic.goto_prev, 'Previous Diagnostic')
-      nmap(']d', vim.diagnostic.goto_next, 'Next Diagnostic')
+      nmap('[d', vim.diagnostic.get_prev, 'Previous Diagnostic')
+      nmap(']d', vim.diagnostic.get_next, 'Next Diagnostic')
 
       -- Code Actions and Refactoring
       nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
@@ -255,6 +255,11 @@ return {
             diagnostics = { globals = { 'vim' } },
           },
         },
+        root_dir = function(fname)
+          return vim.fs.dirname(
+            vim.fs.find({ '.luacheckrc', '.luarc.json', '.git' }, { upward = true, path = fname })[1] or fname
+          ) or require('lspconfig').util.root_pattern('.luarc.json', '.luacheckrc', '.git')(fname) or vim.loop.cwd()
+        end,
       },
       zls = {
         filetypes = { 'zig' },
@@ -277,47 +282,22 @@ return {
     vim.diagnostic.config({
       underline = true,
       severity_sort = true,
-      signs = true,
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = '✘',
+          [vim.diagnostic.severity.WARN] = '▲',
+          [vim.diagnostic.severity.HINT] = '⚑',
+          [vim.diagnostic.severity.INFO] = '»',
+        },
+        linehl = {
+          [vim.diagnostic.severity.ERROR] = 'ErrorMsg',
+        },
+        numhl = {
+          [vim.diagnostic.severity.WARN] = 'WarningMsg',
+        },
+      },
       virtual_text = { spacing = 2, prefix = '●' },
       float = { source = 'if_many', border = 'rounded' },
     })
-
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'InsertLeave', 'BufWritePre' }, {
-      pattern = { 'Makefile', '*.mk' }, -- Apply only to Makefiles
-      callback = function()
-        local bufnr = vim.api.nvim_get_current_buf()
-        if vim.bo[bufnr].filetype ~= 'make' then
-          return
-        end
-
-        local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local diagnostics = {}
-
-        for i, line in ipairs(lines) do
-          if line:match('^[ ]+') then -- Detect only spaces at the start of a line
-            table.insert(diagnostics, {
-              lnum = i - 1,
-              col = 0,
-              severity = vim.diagnostic.severity.ERROR, -- Strong error visibility
-              source = 'MakefileWhitespaceCheck',
-              message = 'Makefiles must use tabs, not spaces for indentation',
-            })
-          end
-        end
-
-        vim.diagnostic.set(vim.api.nvim_create_namespace('make_whitespace'), bufnr, diagnostics, {})
-      end,
-    })
-
-    -- Define diagnostic signs
-    local signs = {
-      { name = 'DiagnosticSignError', text = '✘' },
-      { name = 'DiagnosticSignWarn', text = '▲' },
-      { name = 'DiagnosticSignHint', text = '⚑' },
-      { name = 'DiagnosticSignInfo', text = '»' },
-    }
-    for _, sign in ipairs(signs) do
-      vim.fn.sign_define(sign.name, { text = sign.text, texthl = sign.name })
-    end
   end,
 }

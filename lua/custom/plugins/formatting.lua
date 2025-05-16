@@ -27,10 +27,10 @@ return {
         end
       end,
       go = { 'gofumpt', 'goimports' },
-      yaml = { 'prettier' },
+      yaml = { 'yamlfmt' },
       bash = { 'shfmt' },
       rust = {},
-      dockerfile = { 'hadolint' },
+      -- dockerfile = { 'hadolint' },
       c = { 'clang-format' },
     }
 

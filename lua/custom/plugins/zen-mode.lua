@@ -4,7 +4,7 @@ return {
   opts = {
     window = {
       backdrop = 0.95, -- Transparency level for the zen mode window
-      width = 0.65, -- 80% of the total editor width
+      width = 0.80, -- 80% of the total editor width
       height = 1, -- Full height
       options = {
         signcolumn = 'no', -- Hide signcolumn in zen mode
