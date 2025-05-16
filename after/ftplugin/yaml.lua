@@ -20,9 +20,18 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- Ensure YAML files start with '---'
 vim.api.nvim_create_autocmd('BufWritePre', {
-  pattern = '*.yml,*.yaml',
+  pattern = '*.yml',
+  callback = function()
+    local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+    if first_line ~= '---' then
+      vim.api.nvim_buf_set_lines(0, 0, 0, false, { '---' })
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = '*.yaml',
   callback = function()
     local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
     if first_line ~= '---' then
