@@ -1,7 +1,6 @@
 -- Set buffer-local options for Python files
 vim.opt_local.expandtab = true -- Use spaces instead of tabs
 vim.opt_local.commentstring = '# %s' -- Python comment format
-vim.opt_local.smarttab = true -- Enable smart tab
 vim.opt_local.shiftwidth = 4 -- Indent width
 vim.opt_local.tabstop = 4 -- Tab width
 vim.opt_local.softtabstop = 4 -- Soft tab width for alignment

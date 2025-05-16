@@ -4,13 +4,12 @@ return {
     { 'williamboman/mason.nvim', config = true },
     'williamboman/mason-lspconfig.nvim',
     'WhoIsSethDaniel/mason-tool-installer.nvim',
-
+    { 'folke/neodev.nvim', config = true }, -- Lua development enhancements
     -- Useful status updates for LSP
     {
       'j-hui/fidget.nvim',
-      tag = 'legacy',
-      opts = {},
-      event = 'LspAttach', -- Lazy load on LSP attachment
+      opts = {}, -- Remove legacy tag for newer versions
+      event = 'LspAttach',
     },
 
     {
@@ -18,7 +17,7 @@ return {
       event = 'LspAttach',
     },
 
-    -- Treesitter for better UI and syntax
+    -- Treesitter configuration
     {
       'nvim-treesitter/nvim-treesitter',
       build = ':TSUpdate',
@@ -26,14 +25,30 @@ return {
       opts = {
         highlight = { enable = true },
         indent = { enable = true },
-        ensure_installed = 'all', -- Alternatively, specify a list of languages
+        ensure_installed = {
+          'bash',
+          'c',
+          'cpp',
+          'go',
+          'lua',
+          'python',
+          'rust',
+          'vimdoc',
+          'vim',
+          'yaml',
+        },
       },
+      config = true,
     },
 
     -- venv-selector for Python virtual environments
     {
-      'williamboman/venv-selector.nvim',
-      event = 'BufReadPost',
+      'linux-cultist/venv-selector.nvim', -- Updated to new maintainer
+      event = 'VeryLazy',
+      opts = {
+        auto_activate = true,
+      },
+      config = true,
     },
 
     {
@@ -44,8 +59,12 @@ return {
     -- UI enhancements
     'nvim-lua/plenary.nvim',
     'nvim-telescope/telescope.nvim',
+    'b0o/schemastore.nvim', -- Added explicit dependency
   },
   config = function()
+    -- Initialize neodev before lspconfig
+    require('neodev').setup()
+
     -- Enhanced capabilities for LSP servers
     local capabilities = vim.lsp.protocol.make_client_capabilities()
     local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
@@ -75,9 +94,9 @@ return {
       nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
       -- Diagnostics
-      nmap('<leader>e', vim.diagnostic.open_float, 'Show line [E]rrors')
-      nmap('[d', vim.diagnostic.goto_prev, 'Previous Diagnostic')
-      nmap(']d', vim.diagnostic.goto_next, 'Next Diagnostic')
+      nmap('<leader>d', vim.diagnostic.open_float, 'Show line [E]rrors')
+      nmap('[d', vim.diagnostic.get_prev, 'Previous Diagnostic')
+      nmap(']d', vim.diagnostic.get_next, 'Next Diagnostic')
 
       -- Code Actions and Refactoring
       nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
@@ -87,30 +106,57 @@ return {
       nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
       nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
-      -- Highlight symbol under cursor
+      -- Highlight symbol under cursor with improved performance
       if client.server_capabilities.documentHighlightProvider then
-        local highlight_group = vim.api.nvim_create_augroup('lsp_document_highlight', { clear = false })
+        local highlight_group = vim.api.nvim_create_augroup('lsp_document_highlight', { clear = true })
 
-        -- Create a subtle highlight style (modify to your preference)
-        vim.api.nvim_set_hl(0, 'LspDocumentHighlight', {
-          background = '#3e3e3e', -- darker background for subtle effect
-          foreground = '#a0a0a0', -- lighter color for text, to reduce intensity
-          underline = false,
-        })
+        -- Get the background color from the 'Visual' highlight group (default fallback if unavailable)
+        local visual_bg = vim.fn.synIDattr(vim.fn.hlID('Visual'), 'bg') or '#3e4452'
 
-        -- Apply subtle highlighting on cursor hold
-        -- vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-        --   buffer = bufnr,
-        --   group = highlight_group,
-        --   callback = vim.lsp.buf.document_highlight,
-        -- })
+        -- Set LSP reference highlight groups (avoid setting them multiple times)
+        vim.api.nvim_set_hl(0, 'LspReferenceText', { bg = visual_bg })
+        vim.api.nvim_set_hl(0, 'LspReferenceRead', { bg = visual_bg })
+        vim.api.nvim_set_hl(0, 'LspReferenceWrite', { bg = visual_bg })
 
-        -- Clear references less aggressively
-        vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-          buffer = bufnr,
-          group = highlight_group,
-          callback = vim.lsp.buf.clear_references,
-        })
+        -- Ensure `updatetime` is not too low to prevent excessive highlighting
+        vim.o.updatetime = math.max(vim.o.updatetime, 500)
+
+        -- Function to enable or disable highlights
+        local function toggle_lsp_highlight(enable)
+          if enable then
+            vim.api.nvim_create_autocmd('CursorHold', {
+              group = highlight_group,
+              buffer = bufnr,
+              callback = function()
+                -- Ensure LSP is attached by checking capabilities (no need for server_ready)
+                if client and client.server_capabilities.documentHighlightProvider then
+                  vim.lsp.buf.document_highlight()
+                end
+              end,
+            })
+            vim.api.nvim_create_autocmd('CursorMoved', {
+              group = highlight_group,
+              buffer = bufnr,
+              callback = function()
+                vim.lsp.buf.clear_references()
+              end,
+            })
+          else
+            vim.api.nvim_clear_autocmds({ group = highlight_group, buffer = bufnr })
+            vim.lsp.buf.clear_references()
+          end
+        end
+
+        -- Optional: Command to toggle highlighting manually
+        vim.api.nvim_buf_create_user_command(bufnr, 'LspToggleHighlight', function()
+          local enabled = vim.b.lsp_highlight_enabled or false
+          toggle_lsp_highlight(not enabled)
+          vim.b.lsp_highlight_enabled = not enabled
+          print('LSP document highlights ' .. (enabled and 'disabled' or 'enabled'))
+        end, {})
+
+        -- Enable by default
+        toggle_lsp_highlight(true)
       end
     end
 
@@ -119,10 +165,6 @@ return {
       capabilities = capabilities,
       on_attach = on_attach,
     }
-
-    require('venv-selector').setup({
-      auto_activate = true,
-    })
 
     -- Server-specific configurations
     local servers = {
@@ -134,7 +176,21 @@ return {
           '--suggest-missing-includes',
           '--clang-tidy',
           '--header-insertion=iwyu',
+          '--completion-style=detailed',
+          '--header-insertion-decorators',
+          '--query-driver=/usr/bin/clang,/usr/bin/clang++',
+          '--enable-config', -- Allow reading .clangd configuration files
         },
+        settings = {
+          formatting = true,
+          inlayHints = {
+            designators = true,
+            enabled = true,
+            parameterNames = true,
+            deducedTypes = true,
+          },
+        },
+        filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
       },
       gopls = {
         settings = {
@@ -143,7 +199,15 @@ return {
             staticcheck = true,
             completeUnimported = true,
             usePlaceholders = true,
-            analyses = { unusedparams = true, fieldalignment = true },
+            analyses = { unusedparams = true },
+          },
+        },
+      },
+      jsonls = {
+        settings = {
+          json = {
+            schemas = require('schemastore').json.schemas(),
+            validate = { enable = true },
           },
         },
       },
@@ -158,42 +222,58 @@ return {
             },
           },
         },
-        root_dir = require('lspconfig/util').root_pattern(
-          'pyproject.toml',
-          'setup.py',
-          'setup.cfg',
-          'requirements.txt'
-        ),
       },
-      ruff = {
+      ruff = { -- Updated name from 'ruff'
         filetypes = { 'python' },
-        cmd = { 'ruff', 'server' },
       },
       rust_analyzer = {
-        cmd = { 'rustup', 'run', 'stable', 'rust-analyzer' },
         settings = {
           ['rust-analyzer'] = {
             imports = { granularity = { group = 'module' }, prefix = 'self' },
             cargo = { buildScripts = { enable = true } },
             procMacro = { enable = true },
+            checkOnSave = { command = 'clippy' },
+          },
+        },
+      },
+      taplo = {
+        filetypes = { 'toml' },
+      },
+      yamlls = {
+        settings = {
+          yaml = {
+            schemaStore = { enable = true },
+            validate = true,
           },
         },
       },
       lua_ls = {
         settings = {
           Lua = {
-            runtime = { version = 'LuaJIT', path = vim.split(package.path, ';') },
+            workspace = { checkThirdParty = false },
+            telemetry = { enable = false },
             diagnostics = { globals = { 'vim' } },
-            workspace = { library = vim.api.nvim_get_runtime_file('', true) },
           },
         },
+        root_dir = function(fname)
+          return vim.fs.dirname(
+            vim.fs.find({ '.luacheckrc', '.luarc.json', '.git' }, { upward = true, path = fname })[1] or fname
+          ) or require('lspconfig').util.root_pattern('.luarc.json', '.luacheckrc', '.git')(fname) or vim.loop.cwd()
+        end,
+      },
+      zls = {
+        filetypes = { 'zig' },
+        zig = {},
       },
     }
 
-    -- Setup LSP servers using tbl_deep_extend
-    require('mason-lspconfig').setup({ ensure_installed = vim.tbl_keys(servers) })
-    local lspconfig = require('lspconfig')
+    -- Setup LSP servers
+    require('mason-lspconfig').setup({
+      ensure_installed = vim.tbl_keys(servers),
+      automatic_installation = true,
+    })
 
+    local lspconfig = require('lspconfig')
     for server, config in pairs(servers) do
       lspconfig[server].setup(vim.tbl_deep_extend('force', default_config, config))
     end
@@ -202,23 +282,22 @@ return {
     vim.diagnostic.config({
       underline = true,
       severity_sort = true,
-      signs = true,
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = '✘',
+          [vim.diagnostic.severity.WARN] = '▲',
+          [vim.diagnostic.severity.HINT] = '⚑',
+          [vim.diagnostic.severity.INFO] = '»',
+        },
+        linehl = {
+          [vim.diagnostic.severity.ERROR] = 'ErrorMsg',
+        },
+        numhl = {
+          [vim.diagnostic.severity.WARN] = 'WarningMsg',
+        },
+      },
       virtual_text = { spacing = 2, prefix = '●' },
       float = { source = 'if_many', border = 'rounded' },
     })
-
-    -- Define diagnostic signs
-    local signs = {
-      { name = 'DiagnosticSignError', text = '✘' },
-      { name = 'DiagnosticSignWarn', text = '▲' },
-      { name = 'DiagnosticSignHint', text = '⚑' },
-      { name = 'DiagnosticSignInfo', text = '»' },
-    }
-    for _, sign in ipairs(signs) do
-      vim.fn.sign_define(sign.name, { text = sign.text, texthl = sign.name })
-    end
-
-    -- Additional plugin setups
-    require('fidget').setup({})
   end,
 }

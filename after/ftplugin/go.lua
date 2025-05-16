@@ -1,5 +1,9 @@
 -- Set buffer-local options for Go files
 vim.bo.expandtab = true -- Use spaces instead of tabs
+vim.opt_local.shiftwidth = 4 -- Indent width
+vim.opt_local.tabstop = 4 -- Tab width
+vim.opt_local.softtabstop = 4 -- Soft tab width for alignment
+
 vim.bo.commentstring = '// %s' -- Comment format for Go
 vim.opt_local.comments = 's1:/*,mb:*,ex:*/,://'
 

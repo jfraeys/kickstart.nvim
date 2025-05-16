@@ -1,104 +1,110 @@
 return {
-  -- Highlight, edit, and navigate code
   'nvim-treesitter/nvim-treesitter',
-  dependencies = {
-    'nvim-treesitter/nvim-treesitter-textobjects',
-    'https://github.com/apple/pkl-neovim.git',
-  },
+  version = false, -- last release is too old and doesn't work on Windows
   build = ':TSUpdate',
-  event = { 'BufReadPre', 'BufNewFile' },
-  config = function()
-    local ts = require('nvim-treesitter.configs')
-    ts.setup({
-      sync_install = {
-        enable = true,
-        prompt = 'Syncing plugins...',
+  event = { 'VeryLazy' },
+  lazy = vim.fn.argc(-1) == 0, -- load treesitter early when opening a file from the cmdline
+  init = function(plugin)
+    -- PERF: add nvim-treesitter queries to the rtp and its custom query predicates early
+    require('lazy.core.loader').add_to_rtp(plugin)
+    require('nvim-treesitter.query_predicates')
+  end,
+  cmd = { 'TSUpdateSync', 'TSUpdate', 'TSInstall' },
+  keys = {
+    { '<c-space>', desc = 'Increment Selection' },
+    { '<bs>', desc = 'Decrement Selection', mode = 'x' },
+  },
+  opts_extend = { 'ensure_installed' },
+  ---@type TSConfig
+  ---@diagnostic disable-next-line: missing-fields
+  opts = {
+    highlight = { enable = true },
+    indent = { enable = true },
+    ensure_installed = {
+      'bash',
+      'c',
+      'diff',
+      'html',
+      'javascript',
+      'jsdoc',
+      'json',
+      'jsonc',
+      'lua',
+      'luadoc',
+      'luap',
+      'markdown',
+      'markdown_inline',
+      'printf',
+      'python',
+      'query',
+      'regex',
+      'toml',
+      'tsx',
+      'typescript',
+      'vim',
+      'vimdoc',
+      'xml',
+      'yaml',
+    },
+    incremental_selection = {
+      enable = true,
+      keymaps = {
+        init_selection = 'gnn',
+        node_incremental = 'grn',
+        scope_incremental = 'grc',
+        node_decremental = 'grm',
       },
-      auto_install = false,
-      ensure_installed = {
-        'bash',
-        'c',
-        'cpp',
-        'lua',
-        'python',
-        'go',
-        'markdown',
-        'markdown_inline',
-        'r',
-        'rust',
-        'vimdoc',
-        'vim',
-        'yaml',
-        'query',
-      },
-      ignore_install = {}, -- Example: Ignore Haskell if not needed
-      highlight = {
+    },
+    textobjects = {
+      select = {
         enable = true,
-        additional_vim_regex_highlighting = { 'markdown' },
-      },
-      indent = { enable = true },
-      incremental_selection = {
-        enable = true,
+        lookahead = true,
         keymaps = {
-          init_selection = 'gnn',
-          node_incremental = 'grn',
-          scope_incremental = 'grc',
-          node_decremental = 'grm',
+          ['aa'] = '@parameter.outer',
+          ['ia'] = '@parameter.inner',
+          ['af'] = '@function.outer',
+          ['if'] = '@function.inner',
+          ['ac'] = '@class.outer',
+          ['ic'] = '@class.inner',
         },
       },
-      textobjects = {
-        select = {
-          enable = true,
-          lookahead = true,
-          keymaps = {
-            ['aa'] = '@parameter.outer',
-            ['ia'] = '@parameter.inner',
-            ['af'] = '@function.outer',
-            ['if'] = '@function.inner',
-            ['ac'] = '@class.outer',
-            ['ic'] = '@class.inner',
-          },
+      move = {
+        enable = true,
+        set_jumps = true,
+        goto_next_start = {
+          [']m'] = '@function.outer',
+          [']]'] = '@class.outer',
         },
-        move = {
-          enable = true,
-          set_jumps = true,
-          goto_next_start = {
-            [']m'] = '@function.outer',
-            [']]'] = '@class.outer',
-          },
-          goto_next_end = {
-            [']M'] = '@function.outer',
-            [']['] = '@class.outer',
-          },
-          goto_previous_start = {
-            ['[m'] = '@function.outer',
-            ['[['] = '@class.outer',
-          },
-          goto_previous_end = {
-            ['[M'] = '@function.outer',
-            ['[]'] = '@class.outer',
-          },
+        goto_next_end = {
+          [']M'] = '@function.outer',
+          [']['] = '@class.outer',
         },
-        swap = {
-          enable = true,
-          swap_next = {
-            ['<leader>i'] = '@parameter.inner',
-          },
-          swap_previous = {
-            ['<leader>I'] = '@parameter.inner',
-          },
+        goto_previous_start = {
+          ['[m'] = '@function.outer',
+          ['[['] = '@class.outer',
+        },
+        goto_previous_end = {
+          ['[M'] = '@function.outer',
+          ['[]'] = '@class.outer',
         },
       },
-      refactor = {
-        highlight_definitions = { enable = true },
-        highlight_current_scope = { enable = true },
-        smart_rename = {
-          enable = true,
-          keymaps = {
-            smart_rename = 'grr',
-          },
+      swap = {
+        enable = true,
+        swap_next = {
+          ['<leader>i'] = '@parameter.inner',
+        },
+        swap_previous = {
+          ['<leader>I'] = '@parameter.inner',
         },
       },
-    })
+    },
+  },
+  ---@param opts TSConfig
+  config = function(_, opts)
+    -- Ensure no duplicates in the ensure_installed list
+    if type(opts.ensure_installed) == 'table' then
+      opts.ensure_installed = vim.tbl_deep_extend('force', {}, opts.ensure_installed)
+    end
+    require('nvim-treesitter.configs').setup(opts)
   end,
 }

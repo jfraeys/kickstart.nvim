@@ -24,6 +24,11 @@ vim.keymap.set('n', '<c-d>', '<C-d>zz', { desc = 'Half Page Jumping Up' })
 vim.keymap.set('n', '<c-u>', '<C-u>zz', { desc = 'Half Page Jumping Down' })
 vim.keymap.set('n', 'n', 'nzzzv', { noremap = true, silent = true })
 vim.keymap.set('n', 'N', 'Nzzzv', { noremap = true, silent = true })
+
+vim.keymap.set('n', '<leader>n', function()
+  vim.o.hlsearch = not vim.o.hlsearch
+end, { desc = 'Toggle Search Highlight' })
+
 vim.api.nvim_set_keymap('n', 'gp', '<Nop>', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz')
 vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz')
@@ -36,12 +41,12 @@ vim.keymap.set('n', '<leader>bp', '<cmd>bprev<CR>zz', { desc = 'Quick Nav Buf Pr
 vim.keymap.set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = 'Quick Nav Buf Delete' })
 vim.keymap.set('n', '<leader>bs', '<cmd>split<CR>', { desc = 'Openn Buf Horizontal Split' })
 vim.keymap.set('n', '<leader>bv', '<cmd>vsp<CR>', { desc = 'Open Buf Vertical Split' })
-vim.keymap.set('n', '<leader>bt', function()
-  vim.cmd.vnew()
-  vim.cmd.term()
-  vim.cmd.wincmd('J')
-  vim.api.nvim_win_set_height(0, 15)
-end, { desc = 'Open Buf in Terminal' })
+-- vim.keymap.set('n', '<leader>bt', function()
+--   vim.cmd.vnew()
+--   vim.cmd.term()
+--   vim.cmd.wincmd('J')
+--   vim.api.nvim_win_set_height(0, 15)
+-- end, { desc = 'Open Buf in Terminal' })
 
 -- -- open terminal for R and Python
 -- vim.keymap.set('n', '<leader>bR', '<cmd>terminal R<CR>', { desc = 'Open R Terminal' })
@@ -116,16 +121,6 @@ vim.keymap.set('n', '<leader>fp', function()
     cwd = vim.fs.joinpath(vim.fn.stdpath('data'), 'lazy'),
   })
 end, { desc = '[F]ind [P]lugin Files' })
-
--- Tree-sitter Keymaps
--- Diagnostic keymaps
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
--- vim.keymap.set('n', '<leader>ef', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
--- vim.keymap.set('n', '<leader>ee', function()
---   vim.diagnostic.setloclist()
---   vim.cmd('lopen')
--- end, { desc = 'Open the diagnostics location list' })
 
 -- local runner = require("quarto.runner")
 -- vim.keymap.set('n', '<leader>qrc', runner.run_cell, { desc = '[R]un [C]ell', silent = true })

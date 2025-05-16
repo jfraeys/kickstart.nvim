@@ -1,22 +1,24 @@
+local highlight = {
+  'Whitespace',
+  'Function',
+}
+
 return {
   -- Add indentation guides even on blank lines
   'lukas-reineke/indent-blankline.nvim',
-  -- Enable `lukas-reineke/indent-blankline.nvim`
-  -- See `:help indent_blankline.txt`
   main = 'ibl',
   opts = {
     indent = {
-      --[[ highlight = highlight ]]
+      highlight = highlight,
       char = '┆',
-      -- char = ' ',
-      -- char = "│",
-      -- smart_indent_cap = true,
     },
     whitespace = {
-      --[[ highlight = highlight, ]]
-      remove_blankline_trail = false,
+      highlight = highlight,
+      remove_blankline_trail = true,
     },
-    scope = { enabled = true },
+    scope = {
+      enabled = true,
+      exclude = { language = { 'vim', 'lua', 'go', 'python', 'rust', 'sh', 'json', 'yaml', 'toml', 'markdown' } },
+    },
   },
 }
-
