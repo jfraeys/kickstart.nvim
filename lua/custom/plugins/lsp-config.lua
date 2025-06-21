@@ -27,6 +27,7 @@ return {
         indent = { enable = true },
         ensure_installed = {
           'bash',
+          'html',
           'c',
           'cpp',
           'go',
@@ -36,6 +37,7 @@ return {
           'vimdoc',
           'vim',
           'yaml',
+          'sql',
         },
       },
       config = true,
@@ -67,11 +69,11 @@ return {
 
     -- Enhanced capabilities for LSP servers
     local capabilities = vim.lsp.protocol.make_client_capabilities()
+
     local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
     if has_cmp then
       capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
     end
-
     -- Default on_attach function
     local on_attach = function(client, bufnr)
       vim.bo[bufnr].omnifunc = 'v:lua.vim.lsp.omnifunc'
@@ -100,7 +102,7 @@ return {
 
       -- Code Actions and Refactoring
       nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-      nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+      nmap('<leader>ac', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
       -- Documentation
       nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
@@ -169,6 +171,21 @@ return {
     -- Server-specific configurations
     local servers = {
       bashls = { filetypes = { 'sh', 'bash' } },
+      html = {
+        filetypes = { 'html', 'htmldjango' },
+        init_options = {
+          configurationSection = { 'html', 'css', 'javascript' },
+          embeddedLanguages = {
+            css = true,
+            javascript = true,
+          },
+        },
+      },
+      htmx = {
+        capabilities = capabilities,
+        cmd = { 'htmx-lsp' },
+        filetypes = { 'html', 'htmx' },
+      },
       clangd = {
         cmd = {
           'clangd',
@@ -261,6 +278,36 @@ return {
           ) or require('lspconfig').util.root_pattern('.luarc.json', '.luacheckrc', '.git')(fname) or vim.loop.cwd()
         end,
       },
+      sqls = {
+        filetypes = { 'sql', 'mysql', 'plsql', 'postgresql' },
+        settings = {
+          sql = {
+            connections = {
+              {
+                driver = 'sqlite3',
+                dataSourceName = 'file::memory:?cache=shared',
+              },
+            },
+          },
+        },
+        on_init = function(client)
+          local root_dir = client.config.root_dir or vim.fn.getcwd()
+          local db_files = vim.fn.globpath(root_dir, '*.db', false, true)
+          vim.list_extend(db_files, vim.fn.globpath(root_dir, '*.sqlite', false, true))
+
+          if #db_files > 0 then
+            local connections = {}
+            for _, path in ipairs(db_files) do
+              table.insert(connections, {
+                driver = 'sqlite3',
+                dataSourceName = vim.fn.fnamemodify(path, ':p'),
+              })
+            end
+            client.config.settings.sql.connections = connections
+            client.notify('workspace/didChangeConfiguration', { settings = client.config.settings })
+          end
+        end,
+      },
       zls = {
         filetypes = { 'zig' },
         zig = {},
@@ -269,13 +316,18 @@ return {
 
     -- Setup LSP servers
     require('mason-lspconfig').setup({
+      automatic_enable = true,
       ensure_installed = vim.tbl_keys(servers),
-      automatic_installation = true,
     })
 
     local lspconfig = require('lspconfig')
+    -- for server, config in pairs(servers) do
+    --   lspconfig[server].setup(vim.tbl_deep_extend('force', default_config, config))
+    -- end
     for server, config in pairs(servers) do
-      lspconfig[server].setup(vim.tbl_deep_extend('force', default_config, config))
+      if not lspconfig[server].manager then
+        lspconfig[server].setup(vim.tbl_deep_extend('force', default_config, config))
+      end
     end
 
     -- Diagnostics configuration

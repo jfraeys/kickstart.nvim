@@ -2,43 +2,62 @@ return {
   'mfussenegger/nvim-lint',
   dependencies = { 'WhoIsSethDaniel/mason-tool-installer.nvim' },
   event = { 'BufReadPre', 'BufNewFile' },
-  config = function()
-    -- Set up linters by file type
-    local linters_by_ft = {
+  opts = {
+    linters_by_ft = {
       python = { 'ruff', 'mypy' },
-      go = { 'golangcilint' }, -- nvim-lint expects 'golangcilint'
+      go = { 'golangcilint' },
       yaml = { 'yamllint' },
-      bash = { 'shellcheck' },
+      sh = { 'shellcheck' },
       lua = { 'luacheck' },
-      -- rust = { 'clippy' },
       dockerfile = { 'hadolint' },
-    }
+      sql = { 'sqlfluff' },
+    },
+    mason_to_lint = {
+      golangcilint = 'golangci-lint',
+    },
+  },
+  config = function(_, opts)
+    local lint = require('lint')
 
-    -- Set linters in nvim-lint
-    require('lint').linters_by_ft = linters_by_ft
+    -- Apply filetype mappings
+    lint.linters_by_ft = opts.linters_by_ft
 
-    -- Mapping for Mason's names to nvim-lint's expected names
-    local mason_to_lint = {
-      golangcilint = 'golangci-lint', -- Installed as 'golangci-lint', used as 'golangcilint'
-    }
-
-    -- Gather and deduplicate linters
+    -- Build deduplicated tool list
     local tools = {}
-    for _, linters in pairs(linters_by_ft) do
+    local seen = {}
+    for _, linters in pairs(opts.linters_by_ft) do
       for _, linter in ipairs(linters) do
-        table.insert(tools, mason_to_lint[linter] or linter)
+        local tool = opts.mason_to_lint[linter] or linter
+        if not seen[tool] then
+          table.insert(tools, tool)
+          seen[tool] = true
+        end
       end
     end
 
-    -- Install required linters using Mason
-    require('mason-tool-installer').setup({ ensure_installed = tools })
+    -- Setup mason-tool-installer
+    require('mason-tool-installer').setup({
+      ensure_installed = tools,
+      auto_update = false,
+      run_on_start = true,
+      start_delay = 3000, -- optional delay to avoid race with Mason startup
+    })
 
-    -- Auto-command for linting
-    local lint_augroup = vim.api.nvim_create_augroup('lint', { clear = true })
+    -- Autocommand group for linting
+    local augroup = vim.api.nvim_create_augroup('LintAutogroup', { clear = true })
     vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
-      group = lint_augroup,
+      group = augroup,
       callback = function()
-        require('lint').try_lint()
+        local ft = vim.bo.filetype
+        local available = lint.linters_by_ft[ft]
+        if not available or #available == 0 then
+          return
+        else
+          local ok, err = pcall(lint.try_lint)
+          if not ok then
+            vim.notify('[nvim-lint] Error running linter: ' .. err, vim.log.levels.ERROR)
+          end
+        end
       end,
     })
   end,

@@ -1,6 +1,5 @@
 return {
   'lervag/vimtex',
-  lazy = true,
   ft = { 'tex', 'latex' },
   config = function()
     -- Use Zathura for PDF viewing
